@@ -1,12 +1,14 @@
+{% load static %}
 <!doctype html>
 <html>
 	<head>
 		<title>Register</title>
 
+		<!-- ✅ FIX 1: correct CSS file -->
+		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+
 		<style>
 			body {
-				margin: 0;
-				font-family: "Segoe UI", Arial, sans-serif;
 				background: linear-gradient(135deg, #4caf50, #2e7d32);
 				height: 100vh;
 				display: flex;
@@ -14,60 +16,26 @@
 				align-items: center;
 			}
 
-			.container {
+			.auth-card {
 				background: white;
 				padding: 40px 35px;
 				border-radius: 15px;
 				width: 360px;
 				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-				animation: fadeIn 0.5s ease-in-out;
-			}
-
-			h2 {
-				text-align: center;
-				margin-bottom: 10px;
-				color: #2e7d32;
 			}
 
 			.subtitle {
 				text-align: center;
 				font-size: 13px;
 				color: #777;
-				margin-bottom: 25px;
+				margin-bottom: 20px;
 			}
 
-			input,
-			select {
-				width: 100%;
-				padding: 12px;
-				margin-bottom: 14px;
-				border: 1px solid #ddd;
-				border-radius: 8px;
-				outline: none;
-				transition: 0.2s;
-			}
-
-			input:focus,
-			select:focus {
-				border-color: #4caf50;
-				box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-			}
-
-			button {
-				width: 100%;
-				padding: 12px;
-				background: #4caf50;
-				color: white;
-				border: none;
-				border-radius: 8px;
-				font-weight: bold;
-				cursor: pointer;
-				transition: 0.3s;
-			}
-
-			button:hover {
-				background: #43a047;
-				transform: translateY(-1px);
+			.error {
+				color: red;
+				font-size: 13px;
+				margin-bottom: 10px;
+				text-align: center;
 			}
 
 			.link {
@@ -75,41 +43,14 @@
 				margin-top: 15px;
 				font-size: 14px;
 			}
-
-			.link a {
-				color: #2e7d32;
-				text-decoration: none;
-				font-weight: bold;
-			}
-
-			.link a:hover {
-				text-decoration: underline;
-			}
-
-			.error {
-				color: red;
-				font-size: 14px;
-				margin-bottom: 10px;
-				text-align: center;
-			}
-
-			@keyframes fadeIn {
-				from {
-					opacity: 0;
-					transform: translateY(15px);
-				}
-				to {
-					opacity: 1;
-					transform: translateY(0);
-				}
-			}
 		</style>
 	</head>
 
-	<body>
-		<div class="container">
-			<h2>Create Account</h2>
-			<div class="subtitle">Join the AI Recruiter Platform</div>
+	<body data-user-id="{{ request.session.user_id }}">
+		<div class="auth-card">
+			<h2 style="text-align: center">Create Account</h2>
+
+			<div class="subtitle">Build your AI-powered professional profile (no resume needed)</div>
 
 			<div id="error" class="error"></div>
 
@@ -124,59 +65,23 @@
 					<option value="recruiter">Recruiter</option>
 				</select>
 
-				<button type="submit">Register</button>
+				<button type="submit" id="registerBtn">Register</button>
 			</form>
 
-			<div class="link">Already have an account? <a href="/login/">Login</a></div>
+			<div class="link">
+				Already have an account?
+				<a href="/login/">Login</a>
+			</div>
+
+			<!-- ✅ FIX 2: redirect option if already logged in -->
+			{% if request.session.user_id %}
+			<div style="text-align: center; margin-top: 10px">
+				<a href="/dashboard/" class="btn btn-secondary"> Go to Dashboard </a>
+			</div>
+			{% endif %}
 		</div>
 
-		<script>
-			const form = document.getElementById("registerForm");
-			const errorDiv = document.getElementById("error");
-
-			form.addEventListener("submit", async (e) => {
-				e.preventDefault();
-
-				const name = document.getElementById("name").value;
-				const email = document.getElementById("email").value;
-				const password = document.getElementById("password").value;
-				const confirm = document.getElementById("confirm").value;
-				const role = document.getElementById("role").value;
-
-				errorDiv.innerText = "";
-
-				if (password !== confirm) {
-					errorDiv.innerText = "Passwords do not match";
-					return;
-				}
-
-				try {
-					const res = await fetch("/api/register/", {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							name,
-							email,
-							password,
-							role,
-						}),
-					});
-
-					const data = await res.json();
-
-					if (!res.ok) {
-						errorDiv.innerText = data.error || "Registration failed";
-						return;
-					}
-
-					alert("Registered successfully!");
-					window.location.href = "/login/";
-				} catch (err) {
-					errorDiv.innerText = "Something went wrong";
-				}
-			});
-		</script>
+		<!-- JS -->
+		<script src="{% static 'js/register.js' %}"></script>
 	</body>
 </html>

@@ -2,7 +2,7 @@
 <!doctype html>
 <html>
 	<head>
-		<title>Candidate Profile</title>
+		<title>Candidate</title>
 
 		<!-- ✅ FIX 1: correct CSS file -->
 		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
@@ -30,7 +30,7 @@
 					<h3>Summary</h3>
 					<p>
 						{% if candidate.summary %} {{ candidate.summary }} {% else %}
-						<em>No summary provided</em>
+						<em>No summary available</em>
 						{% endif %}
 					</p>
 				</div>
@@ -42,45 +42,16 @@
 						{% if candidate.skills %} {% for skill in candidate.skills %}
 						<span>{{ skill }}</span>
 						{% endfor %} {% else %}
-						<em>No skills added</em>
+						<em>No skills listed</em>
 						{% endif %}
 					</div>
 				</div>
 
-				<!-- PROJECTS -->
-				<div class="section">
-					<h3>Projects</h3>
-
-					{% if candidate.projects %} {% for p in candidate.projects %}
-					<div class="project">
-						<strong>{{ p.title }}</strong>
-						<p>{{ p.description }}</p>
-						<small>Tech: {{ p.tech }}</small>
-					</div>
-					{% endfor %} {% else %}
-					<p><em>No projects added</em></p>
-					{% endif %}
+				<!-- QUICK ACTION -->
+				<div style="margin-top: 20px">
+					<!-- ✅ FIX 2: consistent button styling -->
+					<a href="/candidate/{{ candidate.id }}/" class="btn btn-secondary"> View Full Profile </a>
 				</div>
-
-				<!-- EXPERIENCE -->
-				<div class="section">
-					<h3>Experience</h3>
-
-					{% if candidate.experiences %} {% for e in candidate.experiences %}
-					<!-- ✅ FIX 2: correct class -->
-					<div class="experience">
-						<strong>{{ e.role }} - {{ e.company }}</strong>
-						<p>{{ e.description }}</p>
-						<small>{{ e.duration }}</small>
-					</div>
-					{% endfor %} {% else %}
-					<p><em>No experience added</em></p>
-					{% endif %}
-				</div>
-
-				<!-- BACK -->
-				<!-- ✅ FIX 3: consistent button styling -->
-				<a href="/candidates-page/" class="btn btn-secondary"> ← Back to Candidates </a>
 			</div>
 		</div>
 	</body>

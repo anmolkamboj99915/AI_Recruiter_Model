@@ -1,0 +1,81 @@
+{% load static %}
+<!doctype html>
+<html>
+	<head>
+		<title>AI Profile Builder</title>
+
+		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+	</head>
+
+	<body data-user-id="{{ request.session.user_id }}">
+		<div class="navbar">
+			<h2>AI Profile Builder</h2>
+			<div class="nav-links">
+				<a href="/dashboard/">Dashboard</a>
+				<a href="/profile-preview/">Preview</a>
+				<a href="/logout/">Logout</a>
+			</div>
+		</div>
+
+		<div class="container">
+			<!-- PROGRESS -->
+			<div class="progress">
+				<div id="progressBar"></div>
+			</div>
+
+			<!-- SUMMARY -->
+			<div class="section">
+				<h3>Tell us about yourself</h3>
+				<textarea id="summary"></textarea>
+			</div>
+
+			<!-- SKILLS -->
+			<div class="section">
+				<h3>Skills</h3>
+				<input type="text" id="skills" />
+			</div>
+
+			<!-- ✅ FIX: AI PROFILE GENERATOR -->
+			<div class="section">
+				<h3>AI Profile Generator</h3>
+
+				<textarea id="aiInput" placeholder="Describe your full experience, skills, and projects..."></textarea>
+
+				<button id="aiBuildBtn" class="btn btn-primary">Generate Full Profile with AI</button>
+
+				<div id="aiProfileResult" class="result"></div>
+			</div>
+
+			<!-- AI PROJECT BUILDER -->
+			<div class="section">
+				<h3>AI Project Builder</h3>
+
+				<form id="aiForm">
+					{% csrf_token %}
+					<textarea id="projectText" name="text"></textarea>
+					<button class="btn btn-primary" type="submit">Generate with AI</button>
+				</form>
+
+				<div id="loading" style="display: none">Generating AI response...</div>
+				<div id="dynamicResult" class="result"></div>
+			</div>
+
+			<!-- EXPERIENCE -->
+			<div class="section">
+				<h3>Experience</h3>
+				<input type="text" id="company" placeholder="Company" />
+				<input type="text" id="role" placeholder="Role" />
+				<input type="text" id="duration" placeholder="Duration" />
+				<textarea id="expDesc" placeholder="Description"></textarea>
+			</div>
+
+			<!-- SAVE -->
+			<button id="saveBtn" class="btn btn-primary">Save Profile</button>
+
+			<div id="saveStatus"></div>
+		</div>
+
+		<script src="{% static 'js/ai_builder.js' %}"></script>
+		<script src="{% static 'js/autosave.js' %}"></script>
+	</body>
+</html>

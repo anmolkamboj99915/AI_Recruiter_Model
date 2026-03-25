@@ -1,0 +1,36 @@
+{% load static %}
+<!doctype html>
+<html>
+	<head>
+		<title>Profile Preview</title>
+
+		<!-- ✅ FIX 1: correct CSS file -->
+		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+	</head>
+
+	<body data-user-id="{{ request.session.user_id }}">
+		<!-- NAVBAR -->
+		<div class="navbar">
+			<h2>Profile Preview</h2>
+
+			<div>
+				<button id="printBtn" class="btn btn-primary">Download PDF</button>
+
+				<button id="shareBtn" class="btn btn-secondary">Share</button>
+			</div>
+
+			<div class="nav-links">
+				<!-- ✅ FIX 2: consistent button styling -->
+				<a href="/profile-builder/" class="btn btn-secondary"> ← Back </a>
+				<a href="/dashboard/">Dashboard</a>
+				<a href="/logout/">Logout</a>
+			</div>
+		</div>
+
+		<!-- MAIN -->
+		<div class="container" id="profileContainer">Loading profile...</div>
+
+		<!-- JS FILE -->
+		<script src="{% static 'js/profile_preview.js' %}"></script>
+	</body>
+</html>

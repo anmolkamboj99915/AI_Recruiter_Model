@@ -6,17 +6,19 @@ class SkillSerializer(serializers.ModelSerializer):
     class Meta:
         model = Skill
         fields = '__all__'
-    
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = '__all__'
 
+
 class UserSerializer(serializers.ModelSerializer):
-    skills = SkillSerializer(many=True, read_only=True, source='skill_set')
-    projects = ProjectSerializer(many=True, read_only=True, source='project_set')
-    
+    # ✅ FIX 1: correct related_name usage
+    skills = SkillSerializer(many=True, read_only=True)
+    projects = ProjectSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
-        fields = '__all__'       
-    
+        fields = '__all__'

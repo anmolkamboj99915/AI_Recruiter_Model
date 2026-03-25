@@ -2,7 +2,7 @@
 <!doctype html>
 <html>
 	<head>
-		<title>Candidates</title>
+		<title>Recruiter Dashboard</title>
 
 		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
 	</head>
@@ -10,18 +10,20 @@
 	<body data-user-id="{{ request.session.user_id }}">
 		<!-- NAVBAR -->
 		<div class="navbar">
-			<h2>AI Recruiter</h2>
+			<h2>Recruiter Dashboard</h2>
+
 			<div class="nav-links">
 				<a href="/dashboard/">Dashboard</a>
-				<a href="/ai-builder/">AI Builder</a>
 				<a href="/logout/">Logout</a>
 			</div>
 		</div>
 
 		<!-- MAIN -->
-		<div class="container" id="candidateList">
+		<div class="container">
+			<h3 class="title">All Candidates</h3>
+
 			<!-- ✅ FIXED -->
-			<h2 class="title">All Candidates</h2>
+			<div id="candidateList">Loading candidates...</div>
 		</div>
 
 		<!-- JS -->

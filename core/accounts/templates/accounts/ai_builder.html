@@ -1,111 +1,14 @@
+{% load static %}
 <!doctype html>
 <html>
 	<head>
-		<title>AI Builder</title>
+		<title>AI Project Builder</title>
 
-		<style>
-			body {
-				margin: 0;
-				font-family: "Segoe UI", Arial, sans-serif;
-				background: #f4f6f8;
-			}
-
-			/* NAVBAR */
-			.navbar {
-				background: #2e7d32;
-				color: white;
-				padding: 15px 30px;
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-			}
-
-			.navbar h2 {
-				margin: 0;
-			}
-
-			.nav-links a {
-				color: white;
-				text-decoration: none;
-				margin-left: 15px;
-				font-weight: bold;
-			}
-
-			.nav-links a:hover {
-				text-decoration: underline;
-			}
-
-			/* MAIN */
-			.container {
-				max-width: 750px;
-				margin: 40px auto;
-				background: white;
-				padding: 30px;
-				border-radius: 12px;
-				box-shadow: 0 5px 12px rgba(0, 0, 0, 0.08);
-			}
-
-			h2 {
-				text-align: center;
-				margin-bottom: 20px;
-				color: #2e7d32;
-			}
-
-			textarea {
-				width: 100%;
-				height: 120px;
-				padding: 12px;
-				border-radius: 8px;
-				border: 1px solid #ddd;
-				margin-bottom: 15px;
-				resize: none;
-				transition: 0.2s;
-			}
-
-			textarea:focus {
-				border-color: #4caf50;
-				box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-				outline: none;
-			}
-
-			button {
-				padding: 12px 20px;
-				background: #4caf50;
-				color: white;
-				border: none;
-				border-radius: 8px;
-				cursor: pointer;
-				font-weight: bold;
-				transition: 0.3s;
-			}
-
-			button:hover {
-				background: #43a047;
-				transform: translateY(-1px);
-			}
-
-			/* RESULT BOX */
-			.result {
-				margin-top: 25px;
-				padding: 20px;
-				background: #f9fafb;
-				border-left: 5px solid #4caf50;
-				border-radius: 8px;
-			}
-
-			.result h3 {
-				margin-bottom: 10px;
-				color: #2e7d32;
-			}
-
-			.result p {
-				margin: 8px 0;
-				color: #333;
-			}
-		</style>
+		<!-- ✅ FIX 1: correct CSS filename -->
+		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
 	</head>
 
-	<body>
+	<body data-user-id="{{ request.session.user_id }}">
 		<!-- NAVBAR -->
 		<div class="navbar">
 			<h2>AI Recruiter</h2>
@@ -120,32 +23,51 @@
 		<div class="container">
 			<h2>AI Project Builder</h2>
 
-			<form method="POST">
+			<div class="subtitle" style="text-align: center; color: #777; margin-bottom: 20px">Describe your work → AI will convert it into a structured project</div>
+
+			<!-- FORM -->
+			<form id="aiForm">
 				{% csrf_token %}
-				<textarea name="text" placeholder="Describe your project idea..."></textarea>
-				<button type="submit">Generate</button>
+
+				<!-- ✅ FIX 2: ID aligned with JS fallback -->
+				<textarea name="text" id="projectText" placeholder="Example: Built a React app for managing tasks with Django backend and authentication..."></textarea>
+
+				<div class="hint" style="font-size: 12px; color: #888">Tip: Mention technologies, purpose, and what you built.</div>
+
+				<button type="submit" class="btn-primary">Generate with AI</button>
 			</form>
 
+			<!-- LOADING -->
+			<div id="loading" class="loading" style="display: none">Generating AI response...</div>
+
+			<!-- DYNAMIC RESULT (JS FILLS THIS) -->
+			<div id="dynamicResult"></div>
+
+			<!-- SERVER RESULT (fallback) -->
 			{% if result %}
 			<div class="result">
-				<h3>AI Suggestion</h3>
+				<h3>AI Generated Project</h3>
 
-				<p>
-					<strong>Title:</strong>
-					{% if result.title %} {{ result.title }} {% else %} {{ result }} {% endif %}
-				</p>
+				<p><strong>Title:</strong> {{ result.title }}</p>
+				<p><strong>Description:</strong> {{ result.description }}</p>
 
-				<p>
-					<strong>Description:</strong>
-					{% if result.description %} {{ result.description }} {% endif %}
-				</p>
-
-				<p>
+				<div>
 					<strong>Tech Stack:</strong>
-					{% if result.tech %} {{ result.tech }} {% endif %}
-				</p>
+					<div class="tech">
+						{% for t in result.tech %}
+						<span>{{ t }}</span>
+						{% endfor %}
+					</div>
+				</div>
+
+				<!-- ✅ FIX 3: match JS function name -->
+				<button class="btn-secondary" onclick="useGeneratedProject()">Use this project</button>
 			</div>
 			{% endif %}
 		</div>
+
+		<!-- JS FILES -->
+		<script src="{% static 'js/ai_builder.js' %}"></script>
+		<script src="{% static 'js/autosave.js' %}"></script>
 	</body>
 </html>

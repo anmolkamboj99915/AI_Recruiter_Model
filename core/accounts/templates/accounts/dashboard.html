@@ -1,94 +1,14 @@
+{% load static %}
 <!doctype html>
 <html>
 	<head>
 		<title>Dashboard</title>
 
-		<style>
-			body {
-				margin: 0;
-				font-family: "Segoe UI", Arial, sans-serif;
-				background: #f4f6f8;
-			}
-
-			/* TOP NAVBAR */
-			.navbar {
-				background: #2e7d32;
-				color: white;
-				padding: 15px 30px;
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-			}
-
-			.navbar h2 {
-				margin: 0;
-			}
-
-			.nav-links a {
-				color: white;
-				text-decoration: none;
-				margin-left: 15px;
-				font-weight: bold;
-			}
-
-			.nav-links a:hover {
-				text-decoration: underline;
-			}
-
-			/* MAIN CONTENT */
-			.container {
-				max-width: 900px;
-				margin: 40px auto;
-				padding: 0 20px;
-			}
-
-			.title {
-				text-align: center;
-				margin-bottom: 30px;
-				color: #333;
-			}
-
-			/* CARDS */
-			.card {
-				background: white;
-				padding: 25px;
-				margin-bottom: 20px;
-				border-radius: 12px;
-				box-shadow: 0 5px 12px rgba(0, 0, 0, 0.08);
-				transition: 0.3s;
-			}
-
-			.card:hover {
-				transform: translateY(-3px);
-			}
-
-			.card h3 {
-				margin-bottom: 10px;
-				color: #2e7d32;
-			}
-
-			.card p {
-				color: #555;
-			}
-
-			.btn {
-				display: inline-block;
-				margin-top: 15px;
-				padding: 10px 18px;
-				background: #4caf50;
-				color: white;
-				border-radius: 6px;
-				text-decoration: none;
-				transition: 0.3s;
-			}
-
-			.btn:hover {
-				background: #43a047;
-			}
-		</style>
+		<!-- ✅ FIX 1: correct CSS file -->
+		<link rel="stylesheet" href="{% static 'css/styles.css' %}" />
 	</head>
 
-	<body>
+	<body data-user-id="{{ request.session.user_id }}">
 		<!-- NAVBAR -->
 		<div class="navbar">
 			<h2>AI Recruiter</h2>
@@ -100,19 +20,55 @@
 
 		<!-- MAIN -->
 		<div class="container">
-			<h2 class="title">Welcome to Dashboard</h2>
+			<h2 class="title">Welcome to AI Recruitment Platform</h2>
+
+			<!-- ================= CANDIDATE VIEW ================= -->
+			{% if request.session.role == 'candidate' %}
 
 			<div class="card">
-				<h3>View Candidates</h3>
-				<p>Browse all available candidates and explore their skills and experience.</p>
-				<a href="/candidates-page/" class="btn">View Candidates</a>
+				<h3>Build Your Profile</h3>
+				<p>Create a structured profile using AI instead of uploading a resume.</p>
+				<a href="/profile-builder/" class="btn btn-primary">Start Building</a>
 			</div>
 
 			<div class="card">
 				<h3>AI Project Builder</h3>
-				<p>Generate smart project ideas using AI based on your input.</p>
-				<a href="/ai-builder/" class="btn">Open AI Builder</a>
+				<p>Describe your work and let AI generate professional project entries.</p>
+				<a href="/ai-builder/" class="btn btn-secondary">Open AI Builder</a>
 			</div>
+
+			<div class="card">
+				<h3>Preview Your Profile</h3>
+				<p>View how recruiters will see your profile and export it as a resume.</p>
+				<a href="/profile-preview/" class="btn btn-primary">Preview Profile</a>
+			</div>
+
+			{% endif %}
+
+			<!-- ================= RECRUITER VIEW ================= -->
+			{% if request.session.role == 'recruiter' %}
+
+			<div class="card">
+				<h3>Browse Candidates</h3>
+				<p>Explore structured candidate profiles with skills and experience.</p>
+				<a href="/candidates-page/" class="btn btn-primary">View Candidates</a>
+			</div>
+
+			<div class="card">
+				<h3>AI-Enhanced Hiring</h3>
+				<p>Evaluate candidates faster with structured data instead of resumes.</p>
+			</div>
+
+			{% endif %}
+
+			<!-- ✅ FIX 2: fallback if role missing -->
+			{% if not request.session.role %}
+			<div class="card">
+				<h3>Welcome</h3>
+				<p>Please complete onboarding to continue.</p>
+				<a href="/onboarding/" class="btn btn-primary">Go to Onboarding</a>
+			</div>
+			{% endif %}
 		</div>
 	</body>
 </html>

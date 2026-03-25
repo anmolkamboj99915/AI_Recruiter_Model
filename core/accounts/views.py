@@ -1,14 +1,14 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import User, Skill, Project
+from .models import User, Shortlist
 from django.contrib.auth.hashers import check_password, make_password
 from django.shortcuts import render, redirect
-
+from .services import save_user_profile, get_all_candidates, get_user_profile
+from .ai_engine import parse_project, ai_profile_builder, ollama_ai_profile
 
 # ================= HELPER =================
-def require_login(request):
+def is_not_logged_in(request):
     return not request.session.get('user_id')
-
 
 # ================= REGISTER API =================
 @api_view(['POST'])
@@ -32,14 +32,12 @@ def register(request):
     )
 
     return Response({
-        "message": "User registered successfully",
         "user": {
             "id": user.id,
             "email": user.email,
             "role": user.role
         }
     })
-
 
 # ================= LOGIN API =================
 @api_view(['POST'])
@@ -52,6 +50,9 @@ def login(request):
 
         if not check_password(password, user.password):
             return Response({'error': "Invalid credentials"}, status=400)
+
+        request.session['user_id'] = user.id
+        request.session['role'] = user.role
 
         return Response({
             "user": {
@@ -75,91 +76,90 @@ def save_profile(request):
 
     try:
         user = User.objects.get(id=user_id)
+        completion = save_user_profile(user, request.data)
 
-        user.summary = request.data.get('summary', user.summary)
-        user.save()
-
-        Skill.objects.filter(user=user).delete()
-        Project.objects.filter(user=user).delete()
-
-        for skill in request.data.get('skills', []):
-            Skill.objects.create(user=user, name=skill)
-
-        for proj in request.data.get('projects', []):
-            Project.objects.create(
-                user=user,
-                title=proj.get('title'),
-                description=proj.get('description'),
-                tech=", ".join(proj.get('tech', []))
-            )
-
-        return Response({"message": "Profile saved successfully"})
+        return Response({
+            "completion": completion
+        })
 
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=404)
 
 
-# ================= AI PARSER =================
-def simple_ai_parser(text):
-    text = (text or "").lower()
+# ================= SHORTLIST ADD =================
+@api_view(['POST'])
+def add_shortlist(request):
+    recruiter_id = request.session.get('user_id')
 
-    tech_stack = []
+    # ✅ FIX 1: authentication guard
+    if not recruiter_id:
+        return Response({"error": "Not authenticated"}, status=401)
 
-    if "react" in text:
-        tech_stack.append("React")
-    if "django" in text:
-        tech_stack.append("Django")
-    if "javascript" in text:
-        tech_stack.append("JavaScript")
+    candidate_id = request.data.get('candidate_id')
 
-    title = "Project"
-    if "website" in text:
-        title = "Website Project"
-    elif "app" in text:
-        title = "Application Project"
+    try:
+        recruiter = User.objects.get(id=recruiter_id, role='recruiter')
+        candidate = User.objects.get(id=candidate_id, role='candidate')
 
-    return {
-        "title": title,
-        "description": text.capitalize(),
-        "tech": tech_stack,
-    }
+        Shortlist.objects.get_or_create(
+            recruiter=recruiter,
+            candidate=candidate
+        )
+
+        return Response({"message": "Added"})
+
+    except User.DoesNotExist:
+        return Response({"error": "Invalid user"}, status=400)
+
+
+# ================= SHORTLIST REMOVE =================
+@api_view(['POST'])
+def remove_shortlist(request):
+    recruiter_id = request.session.get('user_id')
+
+    # ✅ FIX 2: authentication guard
+    if not recruiter_id:
+        return Response({"error": "Not authenticated"}, status=401)
+
+    candidate_id = request.data.get('candidate_id')
+
+    Shortlist.objects.filter(
+        recruiter_id=recruiter_id,
+        candidate_id=candidate_id
+    ).delete()
+
+    return Response({"message": "Removed"})
 
 
 # ================= AI API =================
 @api_view(['POST'])
 def ai_generate_project(request):
     text = request.data.get("text", "")
-    return Response(simple_ai_parser(text))
+
+    if not text:
+        return Response({"error": "Text required"}, status=400)
+
+    return Response(parse_project(text))
 
 
-# ================= GET ALL CANDIDATES =================
+# ================= GET CANDIDATES =================
 @api_view(['GET'])
 def get_candidates(request):
-    users = User.objects.filter(role='candidate')
+    recruiter_id = request.session.get('user_id')
 
-    data = []
+    candidates = get_all_candidates()
 
-    for user in users:
-        skills = Skill.objects.filter(user=user)
-        projects = Project.objects.filter(user=user)
+    shortlisted_ids = []
+    if recruiter_id:
+        shortlisted_ids = list(
+            Shortlist.objects.filter(recruiter_id=recruiter_id)
+            .values_list('candidate_id', flat=True)
+        )
 
-        data.append({
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "summary": user.summary,
-            "skills": [s.name for s in skills],
-            "projects": [
-                {
-                    "title": p.title,
-                    "description": p.description,
-                    "tech": p.tech.split(", ")
-                }
-                for p in projects
-            ]
-        })
-
-    return Response(data)
+    return Response({
+        "candidates": candidates,
+        "shortlisted": shortlisted_ids
+    })
 
 
 # ================= GET SINGLE CANDIDATE =================
@@ -167,149 +167,110 @@ def get_candidates(request):
 def get_candidate(request, user_id):
     try:
         user = User.objects.get(id=user_id, role='candidate')
-        skills = Skill.objects.filter(user=user)
-        projects = Project.objects.filter(user=user)
-
-        return Response({
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "summary": user.summary,
-            "skills": [s.name for s in skills],
-            "projects": [
-                {
-                    "title": p.title,
-                    "description": p.description,
-                    "tech": p.tech.split(", ")
-                }
-                for p in projects
-            ]
-        })
-
+        return Response(get_user_profile(user))
     except User.DoesNotExist:
         return Response({"error": "Candidate not found"}, status=404)
 
 
+# ================= ONBOARDING =================
+@api_view(['POST'])
+def onboarding(request):
+    name = request.data.get('name')
+    email = request.data.get('email')
+    role = request.data.get('role', 'candidate')
+
+    user, _ = User.objects.get_or_create(
+        email=email,
+        defaults={
+            "name": name,
+            "password": "",
+            "role": role
+        }
+    )
+
+    # ✅ login after onboarding
+    request.session['user_id'] = user.id
+    request.session['role'] = user.role
+
+    return Response({"user_id": user.id})
+
+
 # ================= PAGES =================
+def dashboard_page(request):
+    if is_not_logged_in(request):
+        return redirect('/login/')
+
+    if request.session.get("role") == "recruiter":
+        return render(request, "accounts/recruiter_dashboard.html")
+
+    return render(request, "accounts/dashboard.html")
+
+
 def home_page(request):
     return render(request, "accounts/home.html")
 
 
 def login_page(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        try:
-            user = User.objects.get(email=email)
-
-            if check_password(password, user.password):
-                request.session['user_id'] = user.id
-                request.session['role'] = user.role
-                return redirect('/dashboard/')
-
-        except User.DoesNotExist:
-            return render(request, "accounts/login.html", {"error": "Invalid credentials"})
-
     return render(request, "accounts/login.html")
 
 
 def register_page(request):
-    if request.method == "POST":
-        name = request.POST.get("name")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-        role = request.POST.get("role", "candidate")
-
-        if not name or not email or not password:
-            return render(request, "accounts/register.html", {"error": "All fields required"})
-
-        if User.objects.filter(email=email).exists():
-            return render(request, "accounts/register.html", {"error": "User already exists"})
-
-        User.objects.create(
-            name=name,
-            email=email,
-            password=make_password(password),
-            role=role
-        )
-
-        return redirect('/login/')
-
     return render(request, "accounts/register.html")
 
 
-def dashboard_page(request):
-    if require_login(request):
-        return redirect('/login/')
-    return render(request, "accounts/dashboard.html")
-
-
-def ai_builder_page(request):
-    if require_login(request):
-        return redirect('/login/')
-
-    result = None
-
-    if request.method == "POST":
-        text = request.POST.get("text")
-        if text:
-            result = simple_ai_parser(text)
-
-    return render(request, "accounts/ai_builder.html", {"result": result})
-
-
 def candidates_page(request):
-    if require_login(request):
+    if is_not_logged_in(request):
         return redirect('/login/')
-
-    users = User.objects.filter(role='candidate')
-
-    data = []
-
-    for user in users:
-        skills = Skill.objects.filter(user=user)
-
-        data.append({
-            "id": user.id,
-            "name": user.name,
-            "summary": user.summary,
-            "skills": [s.name for s in skills]
-        })
-
-    return render(request, "accounts/candidates.html", {"candidates": data})
+    return render(request, "accounts/candidates.html")
 
 
 def candidate_detail_page(request, user_id):
-    if require_login(request):
+    if is_not_logged_in(request):
         return redirect('/login/')
 
     try:
         user = User.objects.get(id=user_id, role='candidate')
-        skills = Skill.objects.filter(user=user)
-        projects = Project.objects.filter(user=user)
-
-        data = {
-            "name": user.name,
-            "email": user.email,
-            "summary": user.summary,
-            "skills": [s.name for s in skills],
-            "projects": [
-                {
-                    "title": p.title,
-                    "description": p.description,
-                    "tech": p.tech
-                }
-                for p in projects
-            ]
-        }
-
-        return render(request, "accounts/candidate_detail.html", {"candidate": data})
-
+        return render(request, "accounts/candidate_detail.html", {
+            "candidate": get_user_profile(user)
+        })
     except User.DoesNotExist:
         return redirect('/candidates-page/')
+
+
+def profile_preview_page(request):
+    if is_not_logged_in(request):
+        return redirect('/login/')
+    return render(request, "accounts/profile_preview.html")
+
+
+def profile_builder_page(request):
+    if is_not_logged_in(request):
+        return redirect('/login/')
+    return render(request, "accounts/profile_builder.html")
 
 
 def logout_page(request):
     request.session.flush()
     return redirect('/')
+
+
+def ai_builder_page(request):
+    if is_not_logged_in(request):
+        return redirect('/login/')
+    return render(request, "accounts/ai_builder.html")
+
+@api_view(['POST'])
+def ai_generate_profile(request):
+    text = request.data.get("text", "")
+
+    if not text:
+        return Response({"error": "Text required"}, status=400)
+
+    try:
+        # Try AI model first
+        data = ollama_ai_profile(text)
+    except Exception:
+        # fallback
+        data = ai_profile_builder(text)
+
+    return Response(data)
